@@ -1,0 +1,697 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: IZEN IQ Experience API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: questions
+    description: IQ question management
+  - name: tests
+    description: IQ test sessions
+  - name: users
+    description: User profiles
+  - name: leaderboard
+    description: Global leaderboard
+  - name: stats
+    description: Analytics and statistics
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: User created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/guest:
+    post:
+      operationId: guestLogin
+      tags: [auth]
+      summary: Guest login
+      responses:
+        "200":
+          description: Guest session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /users/{userId}:
+    get:
+      operationId: getUser
+      tags: [users]
+      summary: Get user profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /users/{userId}/update:
+    post:
+      operationId: updateUser
+      tags: [users]
+      summary: Update user profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserBody"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /questions:
+    get:
+      operationId: listQuestions
+      tags: [questions]
+      summary: List questions for a test session
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [logical, pattern, math, verbal, mixed]
+        - name: difficulty
+          in: query
+          schema:
+            type: string
+            enum: [easy, medium, hard, expert]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: List of questions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Question"
+
+  /tests:
+    post:
+      operationId: startTest
+      tags: [tests]
+      summary: Start a new IQ test session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartTestBody"
+      responses:
+        "201":
+          description: Test session started
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestSession"
+    get:
+      operationId: listTests
+      tags: [tests]
+      summary: List user's test history
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: Test history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TestResult"
+
+  /tests/{testId}/submit:
+    post:
+      operationId: submitTest
+      tags: [tests]
+      summary: Submit answers and get IQ score
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitTestBody"
+      responses:
+        "200":
+          description: Test results with IQ score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResult"
+
+  /tests/{testId}:
+    get:
+      operationId: getTest
+      tags: [tests]
+      summary: Get test session details
+      parameters:
+        - name: testId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Test details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestResult"
+
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [leaderboard]
+      summary: Get global leaderboard
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [weekly, alltime]
+            default: alltime
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  /stats/dashboard:
+    get:
+      operationId: getDashboardStats
+      tags: [stats]
+      summary: Get dashboard statistics for current user
+      parameters:
+        - name: userId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
+  /stats/global:
+    get:
+      operationId: getGlobalStats
+      tags: [stats]
+      summary: Get global platform statistics
+      responses:
+        "200":
+          description: Global stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlobalStats"
+
+  /tests/daily:
+    get:
+      operationId: getDailyChallenge
+      tags: [tests]
+      summary: Get today's daily challenge
+      responses:
+        "200":
+          description: Daily challenge info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailyChallenge"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    RegisterBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+        age:
+          type: integer
+      required: [email, password, name]
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        token:
+          type: string
+      required: [user, token]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        name:
+          type: string
+        age:
+          type: integer
+          nullable: true
+        avatarUrl:
+          type: string
+          nullable: true
+        isGuest:
+          type: boolean
+        streak:
+          type: integer
+        createdAt:
+          type: string
+      required: [id, email, name, isGuest, streak, createdAt]
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        bestIq:
+          type: integer
+          nullable: true
+        totalTests:
+          type: integer
+        streak:
+          type: integer
+        rank:
+          type: integer
+          nullable: true
+        iqLevel:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required: [id, name, totalTests, streak, createdAt]
+
+    UpdateUserBody:
+      type: object
+      properties:
+        name:
+          type: string
+        age:
+          type: integer
+        avatarUrl:
+          type: string
+
+    Question:
+      type: object
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+          enum: [logical, pattern, math, verbal]
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, expert]
+        text:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+        options:
+          type: array
+          items:
+            type: string
+        timeLimit:
+          type: integer
+      required: [id, category, difficulty, text, options, timeLimit]
+
+    StartTestBody:
+      type: object
+      properties:
+        category:
+          type: string
+          enum: [logical, pattern, math, verbal, mixed]
+          default: mixed
+        difficulty:
+          type: string
+          enum: [easy, medium, hard, expert, adaptive]
+          default: adaptive
+        questionCount:
+          type: integer
+          default: 20
+        userId:
+          type: integer
+      required: [category, difficulty]
+
+    SubmitTestBody:
+      type: object
+      properties:
+        answers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Answer"
+        timeTaken:
+          type: integer
+      required: [answers, timeTaken]
+
+    Answer:
+      type: object
+      properties:
+        questionId:
+          type: integer
+        selectedOption:
+          type: integer
+        timeTaken:
+          type: integer
+      required: [questionId, selectedOption, timeTaken]
+
+    TestSession:
+      type: object
+      properties:
+        id:
+          type: integer
+        questions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Question"
+        category:
+          type: string
+        difficulty:
+          type: string
+        startedAt:
+          type: string
+      required: [id, questions, category, difficulty, startedAt]
+
+    TestResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        iqScore:
+          type: integer
+        iqLevel:
+          type: string
+          enum: [average, above_average, gifted, genius]
+        accuracy:
+          type: number
+        speedScore:
+          type: number
+        correctAnswers:
+          type: integer
+        totalQuestions:
+          type: integer
+        timeTaken:
+          type: integer
+        category:
+          type: string
+        difficulty:
+          type: string
+        strengths:
+          type: array
+          items:
+            type: string
+        weaknesses:
+          type: array
+          items:
+            type: string
+        completedAt:
+          type: string
+      required: [id, userId, iqScore, iqLevel, accuracy, speedScore, correctAnswers, totalQuestions, timeTaken, category, difficulty, strengths, weaknesses, completedAt]
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        userId:
+          type: integer
+        name:
+          type: string
+        avatarUrl:
+          type: string
+          nullable: true
+        iqScore:
+          type: integer
+        iqLevel:
+          type: string
+        totalTests:
+          type: integer
+        streak:
+          type: integer
+      required: [rank, userId, name, iqScore, iqLevel, totalTests, streak]
+
+    DashboardStats:
+      type: object
+      properties:
+        userId:
+          type: integer
+        bestIq:
+          type: integer
+        averageIq:
+          type: number
+        totalTests:
+          type: integer
+        currentStreak:
+          type: integer
+        globalRank:
+          type: integer
+          nullable: true
+        iqLevel:
+          type: string
+          nullable: true
+        recentTests:
+          type: array
+          items:
+            $ref: "#/components/schemas/TestResult"
+        iqHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/IQDataPoint"
+        categoryBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryStat"
+      required: [userId, bestIq, averageIq, totalTests, currentStreak, recentTests, iqHistory, categoryBreakdown]
+
+    IQDataPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        iqScore:
+          type: integer
+        category:
+          type: string
+      required: [date, iqScore, category]
+
+    CategoryStat:
+      type: object
+      properties:
+        category:
+          type: string
+        averageScore:
+          type: number
+        testsCount:
+          type: integer
+        accuracy:
+          type: number
+      required: [category, averageScore, testsCount, accuracy]
+
+    GlobalStats:
+      type: object
+      properties:
+        totalUsers:
+          type: integer
+        totalTests:
+          type: integer
+        averageIq:
+          type: number
+        topIq:
+          type: integer
+      required: [totalUsers, totalTests, averageIq, topIq]
+
+    DailyChallenge:
+      type: object
+      properties:
+        date:
+          type: string
+        category:
+          type: string
+        difficulty:
+          type: string
+        questionCount:
+          type: integer
+        participantCount:
+          type: integer
+        completed:
+          type: boolean
+        userScore:
+          type: integer
+          nullable: true
+      required: [date, category, difficulty, questionCount, participantCount, completed]
