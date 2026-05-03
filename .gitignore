@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.cache/
+*.log
+.env
+.env.local
+.replit
+.replit-artifact/
+replit.nix
